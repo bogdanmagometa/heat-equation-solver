@@ -10,13 +10,13 @@ def equation_loss(model: nn.Module, spatial_coords: torch.Tensor, timestamps, al
     """Differentiably calculate loss for heat equation:
     loss_i = (dT_i/dt_i - alpha (ddT_i/dx_idx_i + ddT_i/dy_idy_i))**2
     where i is from 0 to N-1
-    loss = sum_over_i{loss_i}
+    loss = sum_over_i{loss_i} / N
 
     Args:
         model (nn.Module): model that accepts (N, k+1), where k is the number of spatial dimensions
         spatial_coords (torch.Tensor): (N, k) tensor containing spatial coordinates
-        timesteps (N, k): (N,) tensor containing timesteps
-        alpha: thermal diffusivity
+        timestamps: (N,) tensor containing timesteps
+        alpha: thermal diffusivity, a scalar or a (N,) tensor of thermal diffusivities
 
     Returns:
         number: loss

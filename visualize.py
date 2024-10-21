@@ -54,8 +54,6 @@ def save_to_video(outfile, model, min_t, max_t, timestep, spatial_resolution, mi
     # Save animation to a video file
     animation.save(outfile, writer=writergif, dpi=dpi)
 
-    print(fig.get_size_inches())
-
 
 if __name__ == "__main__":
     

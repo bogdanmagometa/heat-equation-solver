@@ -25,12 +25,12 @@ def read_image(img_path: str):
 
 def equation(model, batch_size, alpha, min_t, max_t):
     # Heat equation
-    timestemps = torch.rand(batch_size, device=device) * (max_t - min_t) + min_t
+    timestamps = torch.rand(batch_size, device=device) * (max_t - min_t) + min_t
     spatial_coords = torch.rand(batch_size, 2, device=device) * 2 - 1
-    return equation_loss(model, spatial_coords, timestemps, alpha)
+    return equation_loss(model, spatial_coords, timestamps, alpha)
 
 def initial(model, batch_size, min_t):
-    # Initial condition
+    # Initial condition for a circle
     independent_vars = torch.rand(batch_size, 3, device=device) * 2 - 1
     independent_vars[:, 2] = min_t
     temperatures = torch.zeros(batch_size, dtype=torch.float32, device=device)
@@ -43,7 +43,7 @@ def initial_image(model, batch_size, min_t, img):
     independent_vars = torch.rand(batch_size, 3, device=device) * 2 - 1
     independent_vars[:, 2] = min_t
     temperatures = torch.zeros(batch_size, dtype=torch.float32, device=device)
-    temperatures = torch.nn.functional.grid_sample(img[None, None], independent_vars[:, :2].view(1, -1, 1, 2)).view(-1)
+    temperatures = torch.nn.functional.grid_sample(img[None, None], independent_vars[:, :2].view(1, -1, 1, 2), align_corners=False).view(-1)
     return condition_loss(model, independent_vars, temperatures)
 
 def boundary(model, batch_size, min_t, max_t, T):
@@ -58,17 +58,14 @@ def boundary(model, batch_size, min_t, max_t, T):
     return condition_loss(model, independent_vars, temperatures)
 
 
-def train(img_path, model_path):
-    img = read_image(img_path)
+def train(args):
+    # (H, W)
+    img = read_image(args.image)
     
     # siren = make_siren(3, [128, 128, 128, 128, 1])
     siren = make_siren_orig(3, 128, 4, 1, first_omega_0=30)
     siren.to(device)
 
-    min_t = 0
-    max_t = 5
-    alpha = 1e-4
-    batch_size = 1024 * 2
     optimizer = torch.optim.Adam(siren.parameters(), lr=0.0001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.1, patience=3, threshold=0.02, threshold_mode='rel')
 
@@ -88,10 +85,10 @@ def train(img_path, model_path):
         for i in range(1000):
             loss = 0
             
-            loss += equation(siren, batch_size, alpha, min_t, max_t)
+            loss += equation(siren, args.batch_size, args.alpha, args.min_t, args.max_t)
             # loss += initial(siren, batch_size, min_t)
-            loss += initial_image(siren, batch_size, min_t, img)
-            loss += boundary(siren, batch_size, min_t, max_t, 0)
+            loss += initial_image(siren, args.batch_size, args.min_t, img)
+            loss += boundary(siren, args.batch_size, args.min_t, args.max_t, args.boundary)
 
             # Backprop
             optimizer.zero_grad()
@@ -103,7 +100,7 @@ def train(img_path, model_path):
         total_loss /= 1000
         scheduler.step(total_loss)
         print(f"Loss: {total_loss}\n", flush=True)
-        torch.save(siren.state_dict(), model_path)
+        torch.save(siren.state_dict(), args.model_path)
 
     # siren.eval()
     # siren.to('cpu')
@@ -114,6 +111,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--image", type=str)
     parser.add_argument("--model_path", type=str, default='simple_heat.pt')
+    parser.add_argument("--min_t", type=float, default=0)
+    parser.add_argument("--max_t", type=float, default=10)
+    parser.add_argument("--alpha", type=float, default=1e-4)
+    parser.add_argument("--batch_size", type=int, default=1024 * 4)
+    parser.add_argument("--boundary", type=int, default=0)
     args = parser.parse_args()
         
-    train(args.image, args.model_path)
+    train(args)
