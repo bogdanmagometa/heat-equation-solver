@@ -22,13 +22,13 @@ python3 visualize.py --model_path new_year_heat.pt --min_t 0 --max_t 10 --spatia
 
 ![heat](./img/animation_circle.gif)
 
-### Highly diffusive rod in low-diffusive environment
+<!-- ### Highly diffusive rod in low-diffusive environment
 
 ```bash
 python3 train.py --image img/initial_heat.png --alpha diffusivity.png --model_path rod_heat.pt
 python3 visualize.py --model_path new_year_heat.pt --min_t 0 --max_t 10 --spatial_resolution 300 --out_path animation_rod.gif
 ```
-
+ -->
 
 ## Prerequisites
 
